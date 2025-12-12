@@ -1,0 +1,138 @@
+body {
+    width: 350px;
+    height: 500px;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+.container {
+    padding: 16px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
+}
+
+h1 {
+    font-size: 1.2rem;
+    margin: 0;
+    color: #4CAF50; /* Cyber Green */
+}
+
+.status-offline { color: #888; }
+.status-online { color: #4CAF50; }
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.tab-btn {
+    flex: 1;
+    background: #333;
+    border: none;
+    color: #aaa;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.tab-btn.active {
+    background: #4CAF50;
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Content */
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+
+.hidden { display: none; }
+
+/* Forms */
+.form-group {
+    margin-bottom: 12px;
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+    color: #bbb;
+}
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    background: #2d2d2d;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.primary-btn {
+    width: 100%;
+    padding: 10px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.primary-btn:hover { background: #45a049; }
+
+.secondary-btn {
+    padding: 4px 8px;
+    background: #444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.key-box code {
+    display: block;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 0.8rem;
+    background: #111;
+    padding: 8px;
+    color: #8aff8a;
+    border-radius: 4px;
+}
+
+.file-item {
+    background: #2d2d2d;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-left: 3px solid #4CAF50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-info {
+    font-size: 0.9rem;
+}
+
+.log-box {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: #aaa;
+}

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureShare</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SecureShare</h1>
+            <span id="status" class="status-offline">● Offline</span>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="identity">My ID</button>
+            <button class="tab-btn" data-tab="send">Send</button>
+            <button class="tab-btn" data-tab="inbox">Inbox</button>
+        </nav>
+
+        <main>
+            <!-- Tab: Identity -->
+            <section id="identity" class="tab-content active">
+                <div id="register-view">
+                    <h3>Create Identity</h3>
+                    <p>Generate a key pair to start.</p>
+                    <input type="text" id="username-input" placeholder="Choose a Username">
+                    <button id="btn-register" class="primary-btn">Generate Keys & Register</button>
+                </div>
+                <div id="profile-view" class="hidden">
+                    <h3>My Profile</h3>
+                    <p>Username: <strong id="display-username"></strong></p>
+                    <div class="key-box">
+                        <label>Public Key Fingerprint:</label>
+                        <code id="display-pubkey">...</code>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab: Send -->
+            <section id="send" class="tab-content">
+                <h3>Secure Send</h3>
+                <div class="form-group">
+                    <label>Recipient:</label>
+                    <select id="recipient-select">
+                        <option value="">Select User...</option>
+                    </select>
+                    <button id="btn-refresh-users" class="icon-btn" title="Refresh Users">↻</button>
+                </div>
+                <div class="form-group">
+                    <label>File:</label>
+                    <input type="file" id="file-input">
+                </div>
+                <button id="btn-encrypt-send" class="primary-btn">Encrypt & Send</button>
+                <div id="send-log" class="log-box"></div>
+            </section>
+
+            <!-- Tab: Inbox -->
+            <section id="inbox" class="tab-content">
+                <div class="inbox-header">
+                    <h3>My Inbox</h3>
+                    <button id="btn-refresh-inbox" class="secondary-btn">Refresh</button>
+                </div>
+                <div id="file-list" class="file-list">
+                    <!-- Files will act here -->
+                    <p class="empty-msg">No files found.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="crypto-utils.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
