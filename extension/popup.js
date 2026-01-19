@@ -1,251 +1,305 @@
-const API_URL = "http://localhost:3000";
+import { cryptoLib } from './utils/crypto_lib.js';
+import { mockServer } from './utils/api_client.js';
 
+// --- State ---
+let user = null;
+let recipientKey = null;
+let selectedFile = null;
+
+// --- DOM Elements ---
+const views = {
+    loading: document.getElementById('view-loading'),
+    register: document.getElementById('view-register'),
+    dashboard: document.getElementById('view-dashboard')
+};
+
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // UI Elements
-    const elements = {
-        tabs: document.querySelectorAll('.tab-btn'),
-        contents: document.querySelectorAll('.tab-content'),
-        status: document.getElementById('status'),
-        registerView: document.getElementById('register-view'),
-        profileView: document.getElementById('profile-view'),
-        usernameInput: document.getElementById('username-input'),
-        btnRegister: document.getElementById('btn-register'),
-        displayUsername: document.getElementById('display-username'),
-        displayPubkey: document.getElementById('display-pubkey'),
-        recipientSelect: document.getElementById('recipient-select'),
-        btnRefreshUsers: document.getElementById('btn-refresh-users'),
-        fileInput: document.getElementById('file-input'),
-        btnEncryptSend: document.getElementById('btn-encrypt-send'),
-        sendLog: document.getElementById('send-log'),
-        fileList: document.getElementById('file-list'),
-        btnRefreshInbox: document.getElementById('btn-refresh-inbox')
+    await checkLogin();
+    setupTabs();
+    setupRegister();
+    setupSend();
+    setupReceive();
+});
+
+async function checkLogin() {
+    const data = await chrome.storage.local.get(['currentUser']);
+    views.loading.classList.add('hidden');
+
+    if (data.currentUser) {
+        user = data.currentUser;
+        showView('dashboard');
+        initDashboard();
+    } else {
+        showView('register');
+    }
+}
+
+function showView(name) {
+    Object.values(views).forEach(el => el.classList.add('hidden'));
+    views[name].classList.remove('hidden');
+}
+
+// --- Dashboard Logic ---
+function initDashboard() {
+    document.getElementById('userHandleDisplay').textContent = user.handle;
+    renderIdenticon(user.handle, document.getElementById('userIdenticon'));
+
+    document.getElementById('btnLogout').onclick = async () => {
+        await chrome.storage.local.remove('currentUser');
+        location.reload();
+    };
+}
+
+function setupTabs() {
+    const tabSend = document.getElementById('tabSend');
+    const tabReceive = document.getElementById('tabReceive');
+    const contentSend = document.getElementById('content-send');
+    const contentReceive = document.getElementById('content-receive');
+
+    tabSend.onclick = () => {
+        tabSend.classList.add('active');
+        tabReceive.classList.remove('active');
+        contentSend.classList.remove('hidden');
+        contentReceive.classList.add('hidden');
     };
 
-    // --- State ---
-    let myKeys = null; // { publicKey, privateKey }
-    let myUsername = null;
+    tabReceive.onclick = () => {
+        tabReceive.classList.add('active');
+        tabSend.classList.remove('active');
+        contentReceive.classList.remove('hidden');
+        contentSend.classList.add('hidden');
+        loadFiles();
+    };
+}
 
-    // --- init ---
-    await loadIdentity();
-    checkServerStatus();
+// --- Registration / Restore Logic ---
+function setupRegister() {
+    document.getElementById('btnRegister').onclick = async () => {
+        const handle = document.getElementById('regHandle').value;
+        const pass = document.getElementById('regPass').value;
+        const btn = document.getElementById('btnRegister');
 
-    // Tab Switching
-    elements.tabs.forEach(btn => {
-        btn.addEventListener('click', () => {
-            elements.tabs.forEach(b => b.classList.remove('active'));
-            elements.contents.forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.tab).classList.add('active');
-        });
-    });
+        if (!handle || !pass) return alert("Fill all fields");
 
-    // --- Identity Logic ---
-    async function loadIdentity() {
-        const stored = await chrome.storage.local.get(['username', 'privateKey', 'publicKey']);
-        if (stored.username && stored.privateKey && stored.publicKey) {
-            myUsername = stored.username;
-            // Import keys back to objects
-            const privateKey = await CryptoUtils.importKey(stored.privateKey, 'pkcs8', 'decrypt');
-            const publicKey = await CryptoUtils.importKey(stored.publicKey, 'spki', 'encrypt');
-            myKeys = { privateKey, publicKey };
-
-            showProfile(myUsername, stored.publicKey);
-        } else {
-            elements.registerView.classList.remove('hidden');
-            elements.profileView.classList.add('hidden');
-        }
-    }
-
-    elements.btnRegister.addEventListener('click', async () => {
-        const username = elements.usernameInput.value.trim();
-        if (!username) return alert("Enter a username");
-
-        elements.btnRegister.innerText = "Generating...";
+        btn.disabled = true;
+        btn.textContent = "Processing...";
 
         try {
-            // 1. Generate Keys
-            const keyPair = await CryptoUtils.generateKeyPair();
-            const exportedPub = await CryptoUtils.exportKey(keyPair.publicKey, 'spki');
-            const exportedPriv = await CryptoUtils.exportKey(keyPair.privateKey, 'pkcs8');
+            // 1. Check if User Exists on Server (and has backup)
+            const backupKey = await mockServer.fetchEncryptedPrivateKey(handle);
 
-            // 2. Register on Server
-            const res = await fetch(`${API_URL}/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, publicKey: exportedPub })
-            });
+            if (backupKey) {
+                // --- RESTORE IDENTITY FLOW ---
+                btn.textContent = "Restoring Identity...";
+                console.log("Found backup for", handle, "Attempting decrypt...");
 
-            if (!res.ok) throw new Error(await res.text());
+                try {
+                    // Try to decrypt with entered password
+                    // We just test if it throws error
+                    await cryptoLib.decryptPrivateKey(backupKey, pass);
 
-            // 3. Save Locally
-            await chrome.storage.local.set({
-                username: username,
-                publicKey: exportedPub,
-                privateKey: exportedPriv
-            });
+                    // If we are here, Password is Correct!
+                    const userData = { handle, privateKeyEncrypted: backupKey };
+                    await chrome.storage.local.set({ currentUser: userData });
+                    alert("Identity Restored Successfully!");
+                    location.reload();
+                    return;
 
-            await loadIdentity();
-            alert("Registration Successful!");
-        } catch (err) {
-            alert("Error: " + err.message);
-        } finally {
-            elements.btnRegister.innerText = "Generate Keys & Register";
-        }
-    });
+                } catch (e) {
+                    throw new Error("Incorrect Password for existing user.");
+                }
+            } else {
+                // --- NEW REGISTRATION FLOW ---
+                btn.textContent = "Generating Keys...";
 
-    function showProfile(username, pubKeyStr) {
-        elements.registerView.classList.add('hidden');
-        elements.profileView.classList.remove('hidden');
-        elements.displayUsername.innerText = username;
-        elements.displayPubkey.innerText = pubKeyStr.substring(0, 30) + "...";
+                // Double check if handle exists (but no backup)
+                const existingPubKey = await mockServer.getUserKey(handle);
+                if (existingPubKey) {
+                    throw new Error("Handle taken (and no backup found). Choose another.");
+                }
 
-        loadUsers(); // Refresh users list
-    }
+                const keyPair = await cryptoLib.generateKeyPair();
+                const pubKey = await cryptoLib.exportPublicKey(keyPair.publicKey);
+                const privKeyWrap = await cryptoLib.encryptPrivateKey(keyPair.privateKey, pass);
 
-    // --- Send Logic ---
-    async function loadUsers() {
-        try {
-            const res = await fetch(`${API_URL}/users`);
-            const users = await res.json();
-            elements.recipientSelect.innerHTML = '<option value="">Select User...</option>';
-            users.forEach(u => {
-                if (u.username === myUsername) return; // Don't send to self
-                const opt = document.createElement('option');
-                opt.value = u.publicKey; // Store key in value
-                opt.innerText = u.username;
-                elements.recipientSelect.appendChild(opt);
-            });
+                await mockServer.registerUser(handle, pubKey, privKeyWrap);
+
+                const userData = { handle, privateKeyEncrypted: privKeyWrap };
+                await chrome.storage.local.set({ currentUser: userData });
+
+                location.reload();
+            }
+
         } catch (e) {
-            console.error("Failed to load users", e);
+            alert("Error: " + e.message);
+            btn.disabled = false;
+            btn.textContent = "Initialize Identity";
         }
-    }
+    };
+}
 
-    elements.btnRefreshUsers.addEventListener('click', loadUsers);
-
-    elements.btnEncryptSend.addEventListener('click', async () => {
-        const file = elements.fileInput.files[0];
-        const recipientPubKeyStr = elements.recipientSelect.value;
-        const recipientName = elements.recipientSelect.options[elements.recipientSelect.selectedIndex]?.text;
-
-        if (!file || !recipientPubKeyStr) return alert("Select a file and recipient");
+// --- Send Feature ---
+function setupSend() {
+    // Search
+    document.getElementById('btnSearch').onclick = async () => {
+        const handle = document.getElementById('searchHandle').value;
+        recipientKey = null;
+        document.getElementById('recipientBox').classList.add('hidden');
 
         try {
-            log("Reading file...");
-            const buffer = await file.arrayBuffer();
-
-            log("Importing recipient key...");
-            const recipientKey = await CryptoUtils.importKey(recipientPubKeyStr, 'spki', 'encrypt');
-
-            log("Encrypting...");
-            const encryptedBuffer = await CryptoUtils.encryptFile(buffer, recipientKey);
-
-            log("Uploading...");
-            const blob = new Blob([encryptedBuffer]);
-            const formData = new FormData();
-            formData.append('encryptedFile', blob, file.name + ".enc"); // Send as .enc
-            formData.append('recipient', recipientName);
-
-            const res = await fetch(`${API_URL}/upload`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!res.ok) throw new Error("Upload failed");
-
-            log("Sent Successfully!");
-            setTimeout(() => elements.sendLog.innerText = "", 3000);
-            elements.fileInput.value = "";
-        } catch (err) {
-            log("Error: " + err.message);
-        }
-    });
-
-    function log(msg) {
-        elements.sendLog.innerText = msg;
-    }
-
-    // --- Inbox Logic ---
-    elements.btnRefreshInbox.addEventListener('click', loadInbox);
-    // Auto load if logged in
-    document.querySelector('[data-tab="inbox"]').addEventListener('click', loadInbox);
-
-    async function loadInbox() {
-        if (!myUsername) return;
-        try {
-            const res = await fetch(`${API_URL}/files/${myUsername}`);
-            const files = await res.json();
-            renderFiles(files);
+            const key = await mockServer.getUserKey(handle);
+            if (key) {
+                recipientKey = key;
+                document.getElementById('recipientBox').classList.remove('hidden');
+                document.getElementById('dropZone').classList.remove('hidden');
+                renderIdenticon(handle, document.getElementById('recipientIdenticon'));
+            } else {
+                alert("User not found");
+            }
         } catch (e) {
             console.error(e);
         }
+    };
+
+    // File Drop & Click
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const btnSend = document.getElementById('btnSend');
+
+    dropZone.onclick = () => fileInput.click();
+
+    fileInput.onchange = () => {
+        if (fileInput.files[0]) handleFileSelection(fileInput.files[0]);
+    };
+
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = '#00ff41'; };
+    dropZone.ondragleave = () => { dropZone.style.borderColor = '#444'; };
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#444';
+        if (e.dataTransfer.files[0]) handleFileSelection(e.dataTransfer.files[0]);
+    };
+
+    function handleFileSelection(file) {
+        selectedFile = file;
+        fileInfo.innerHTML = `<strong>${file.name}</strong><br><small>${(file.size / 1024).toFixed(1)} KB</small>`;
+        btnSend.classList.remove('hidden');
     }
 
-    function renderFiles(files) {
-        elements.fileList.innerHTML = "";
-        if (files.length === 0) {
-            elements.fileList.innerHTML = '<p class="empty-msg">No files found.</p>';
-            return;
+    // Send Action
+    btnSend.onclick = async () => {
+        if (!selectedFile || !recipientKey) return;
+        const recipientHandle = document.getElementById('searchHandle').value;
+
+        btnSend.disabled = true;
+        btnSend.textContent = "Encrypting...";
+
+        try {
+            const packageData = await cryptoLib.encryptFile(selectedFile, recipientKey);
+            await mockServer.uploadFile(packageData, user.handle, recipientHandle);
+
+            alert("File Sent Securely!");
+            // Reset
+            selectedFile = null;
+            fileInfo.textContent = "Click or Drop File Here";
+            btnSend.classList.add('hidden');
+            btnSend.disabled = false;
+            btnSend.textContent = "Encrypt & Send";
+        } catch (e) {
+            alert("Failed: " + e.message);
+            btnSend.disabled = false;
         }
+    };
+}
+
+// --- Receive Feature ---
+async function loadFiles() {
+    const list = document.getElementById('fileList');
+    list.innerHTML = "Loading...";
+
+    try {
+        const files = await mockServer.fetchFiles(user.handle);
+        list.innerHTML = "";
+
+        if (files.length === 0) list.innerHTML = "<div class='text-dim'>No message found.</div>";
 
         files.forEach(file => {
             const div = document.createElement('div');
             div.className = 'file-item';
             div.innerHTML = `
-                <div class="file-info">
-                    <strong>${file.filename}</strong><br>
-                    <small>${new Date(file.timestamp).toLocaleString()}</small>
+                <div>
+                    <div style="display:flex;align-items:center;gap:5px">
+                        <strong>${file.sender}</strong>
+                    </div>
+                    <div class="text-xs" style="margin-top:4px">${file.fileName}</div>
                 </div>
-                <button class="secondary-btn">Decrypt</button>
+                <button class="btn-sm">Decrypt</button>
             `;
 
-            div.querySelector('button').addEventListener('click', () => downloadAndDecrypt(file));
-            elements.fileList.appendChild(div);
+            // Render Identicon for sender
+            const iconContainer = document.createElement('div');
+            renderIdenticon(file.sender, iconContainer, 16);
+            div.querySelector('strong').prepend(iconContainer);
+
+            // Decrypt Action
+            div.querySelector('button').onclick = () => handleDecrypt(file);
+
+            list.appendChild(div);
         });
+    } catch (e) {
+        list.textContent = "Error loading files.";
     }
+}
 
-    async function downloadAndDecrypt(fileMeta) {
-        try {
-            // 1. Download
-            const res = await fetch(`${API_URL}/download/${fileMeta.id}`);
-            if (!res.ok) throw new Error("Download failed");
-            const encryptedBlob = await res.blob();
-            const encryptedBuffer = await encryptedBlob.arrayBuffer();
+async function handleDecrypt(fileMeta) {
+    const pass = prompt("Enter Password to unlock Private Key:");
+    if (!pass) return;
 
-            // 2. Decrypt
-            if (!myKeys) throw new Error("Keys not loaded");
-            const decryptedBuffer = await CryptoUtils.decryptFile(encryptedBuffer, myKeys.privateKey);
-
-            // 3. Save to Disk
-            // Remove .enc from filename if present
-            let originalName = fileMeta.filename.replace(/\.enc$/, '');
-            saveFile(decryptedBuffer, originalName);
-
-        } catch (err) {
-            alert("Decryption Failed: " + err.message);
+    try {
+        // Fetch Content if needed
+        let fileItem = fileMeta;
+        if (!fileItem.fileData && fileItem.id) {
+            const fullData = await mockServer.getFileContent(fileItem.id);
+            fileItem = { ...fileMeta, ...fullData };
         }
-    }
 
-    function saveFile(buffer, filename) {
-        const blob = new Blob([buffer]);
+        const privateKey = await cryptoLib.decryptPrivateKey(user.privateKeyEncrypted, pass);
+        const blob = await cryptoLib.decryptFile(fileItem, privateKey);
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename;
+        a.download = fileItem.fileName || "decrypted";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert("Decryption Failed: " + e.message);
     }
+}
 
-    // --- Helpers ---
-    async function checkServerStatus() {
-        try {
-            await fetch(API_URL + '/users');
-            elements.status.innerText = "● Online";
-            elements.status.className = "status-online";
-        } catch {
-            elements.status.innerText = "● Offline";
-            elements.status.className = "status-offline";
-        }
-    }
-});
+// --- Helper: Identicon (Canvas) ---
+function renderIdenticon(text, container, size = 24) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+    const color = "00000".substring(0, 6 - c.length) + c;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = `#${color}`;
+    ctx.fillRect(0, 0, size, size);
+
+    // Simple Pattern
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    if (hash % 2 === 0) ctx.fillRect(0, 0, size / 2, size / 2);
+    if (hash % 3 === 0) ctx.fillRect(size / 2, size / 2, size / 2, size / 2);
+
+    container.innerHTML = "";
+    container.appendChild(canvas);
+}

@@ -1,75 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureShare</title>
+    <title>VajraShare</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <div class="container">
-        <header>
-            <h1>SecureShare</h1>
-            <span id="status" class="status-offline">● Offline</span>
-        </header>
+    <div id="app">
+        <!-- Loading View -->
+        <div id="view-loading" class="view">Loading...</div>
 
-        <nav class="tabs">
-            <button class="tab-btn active" data-tab="identity">My ID</button>
-            <button class="tab-btn" data-tab="send">Send</button>
-            <button class="tab-btn" data-tab="inbox">Inbox</button>
-        </nav>
-
-        <main>
-            <!-- Tab: Identity -->
-            <section id="identity" class="tab-content active">
-                <div id="register-view">
-                    <h3>Create Identity</h3>
-                    <p>Generate a key pair to start.</p>
-                    <input type="text" id="username-input" placeholder="Choose a Username">
-                    <button id="btn-register" class="primary-btn">Generate Keys & Register</button>
+        <!-- Register View -->
+        <div id="view-register" class="view hidden">
+            <div class="card">
+                <h2 class="neon-text">VajraShare Init</h2>
+                <p class="text-xs text-dim">Secure Identity Generation</p>
+                <div class="form-group">
+                    <label>Choose Handle:</label>
+                    <input type="text" id="regHandle" placeholder="e.g. Neo">
                 </div>
-                <div id="profile-view" class="hidden">
-                    <h3>My Profile</h3>
-                    <p>Username: <strong id="display-username"></strong></p>
-                    <div class="key-box">
-                        <label>Public Key Fingerprint:</label>
-                        <code id="display-pubkey">...</code>
+                <div class="form-group">
+                    <label>Set Password (Protects Key):</label>
+                    <input type="password" id="regPass" placeholder="Strong password">
+                </div>
+                <button id="btnRegister">Initialize Identity</button>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="view hidden">
+            <header>
+                <div>
+                    <h2 class="neon-text">VajraShare</h2>
+                    <div class="user-info">
+                        <div id="userIdenticon"></div>
+                        <small id="userHandleDisplay"></small>
                     </div>
                 </div>
-            </section>
+                <button id="btnLogout" class="btn-sm">Logout</button>
+            </header>
 
-            <!-- Tab: Send -->
-            <section id="send" class="tab-content">
-                <h3>Secure Send</h3>
-                <div class="form-group">
-                    <label>Recipient:</label>
-                    <select id="recipient-select">
-                        <option value="">Select User...</option>
-                    </select>
-                    <button id="btn-refresh-users" class="icon-btn" title="Refresh Users">↻</button>
-                </div>
-                <div class="form-group">
-                    <label>File:</label>
-                    <input type="file" id="file-input">
-                </div>
-                <button id="btn-encrypt-send" class="primary-btn">Encrypt & Send</button>
-                <div id="send-log" class="log-box"></div>
-            </section>
+            <div class="tabs">
+                <button id="tabSend" class="active">Send</button>
+                <button id="tabReceive">Receive</button>
+            </div>
 
-            <!-- Tab: Inbox -->
-            <section id="inbox" class="tab-content">
-                <div class="inbox-header">
-                    <h3>My Inbox</h3>
-                    <button id="btn-refresh-inbox" class="secondary-btn">Refresh</button>
+            <!-- Send Tab -->
+            <div id="content-send" class="tab-content">
+                <div class="card">
+                    <h3>Secure Send</h3>
+                    <div class="input-group">
+                        <input type="text" id="searchHandle" placeholder="Recipient Handle">
+                        <button id="btnSearch" class="btn-icon">🔍</button>
+                    </div>
+
+                    <div id="recipientBox" class="hidden recipient-box">
+                        <div id="recipientIdenticon"></div>
+                        <div>
+                            <strong>Verified Recipient</strong>
+                            <div class="text-xs text-dim">Key Found</div>
+                        </div>
+                    </div>
+
+                    <div id="dropZone" class="drop-zone hidden">
+                        <input type="file" id="fileInput" hidden>
+                        <div id="fileInfo">Click or Drop File Here</div>
+                    </div>
+
+                    <button id="btnSend" class="hidden full-width">Encrypt & Send</button>
                 </div>
-                <div id="file-list" class="file-list">
-                    <!-- Files will act here -->
-                    <p class="empty-msg">No files found.</p>
+            </div>
+
+            <!-- Receive Tab -->
+            <div id="content-receive" class="tab-content hidden">
+                <h3>Incoming Files</h3>
+                <div id="fileList" class="file-list">
+                    <!-- Files injected here -->
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
     </div>
-    <script src="crypto-utils.js"></script>
-    <script src="popup.js"></script>
+    <script type="module" src="popup.js"></script>
 </body>
+
 </html>
