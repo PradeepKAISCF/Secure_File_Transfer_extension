@@ -13,10 +13,41 @@
         <!-- Loading View -->
         <div id="view-loading" class="view">Loading...</div>
 
+        <!-- Configuration View (Hidden by default) -->
+        <div id="view-config" class="view hidden">
+            <div class="card">
+                <header style="justify-content: space-between; display: flex; align-items: center;">
+                    <h2 class="neon-text">Settings</h2>
+                    <button id="btnCloseConfig" class="btn-sm">Close</button>
+                </header>
+                <p class="text-xs text-dim">Configure Extension Connectivity</p>
+
+                <div class="form-group">
+                    <label>Server Mode:</label>
+                    <select id="serverMode"
+                        style="width: 100%; padding: 8px; background: #222; color: white; border: 1px solid #444;">
+                        <option value="cloud">Public Cloud (PythonAnywhere)</option>
+                        <option value="custom">Intranet / Localhost</option>
+                    </select>
+                </div>
+
+                <div id="customUrlBox" class="form-group hidden">
+                    <label>Custom Server URL:</label>
+                    <input type="text" id="customUrl" placeholder="http://192.168.1.X:5000">
+                    <small class="text-dim">Ensure you have host permissions manifest.</small>
+                </div>
+
+                <button id="btnSaveConfig" class="full-width">Save & Reload</button>
+            </div>
+        </div>
+
         <!-- Register View -->
         <div id="view-register" class="view hidden">
             <div class="card">
-                <h2 class="neon-text">VajraShare Init</h2>
+                <div style="display:flex; justify-content:space-between;">
+                    <h2 class="neon-text">VajraShare Init</h2>
+                    <button id="btnOpenConfigReg" class="btn-icon">⚙️</button>
+                </div>
                 <p class="text-xs text-dim">Secure Identity Generation</p>
                 <div class="form-group">
                     <label>Choose Handle:</label>
@@ -40,7 +71,10 @@
                         <small id="userHandleDisplay"></small>
                     </div>
                 </div>
-                <button id="btnLogout" class="btn-sm">Logout</button>
+                <div style="display:flex; gap:5px">
+                    <button id="btnOpenConfigDash" class="btn-icon">⚙️</button>
+                    <button id="btnLogout" class="btn-sm">Logout</button>
+                </div>
             </header>
 
             <div class="tabs">
