@@ -1,11 +1,19 @@
 // Configuration
-const SERVER_URL = "https://pradeepkaiscf.pythonanywhere.com";
+const DEFAULT_SERVER_URL = "https://pradeepkaiscf.pythonanywhere.com";
+
+// Helper to get active URL
+const getUrl = async () => {
+    const data = await chrome.storage.local.get(['customServerUrl']);
+    let url = data.customServerUrl || DEFAULT_SERVER_URL;
+    // Remove trailing slash if present
+    return url.replace(/\/$/, "");
+};
 
 export const mockServer = {
-    // We keep the name 'mockServer' to avoid refactoring all imports in UI, 
-    // but internally it is now a Real Client.
+    // INTERNAL CLIENT
 
     registerUser: async (handle, publicKey, privateKeyEncrypted) => {
+        const SERVER_URL = await getUrl();
         const payload = { handle, publicKey };
         if (privateKeyEncrypted) {
             payload.privateKeyEncrypted = privateKeyEncrypted;
@@ -21,22 +29,31 @@ export const mockServer = {
     },
 
     getUserKey: async (handle) => {
-        const res = await fetch(`${SERVER_URL}/key/${handle}`);
-        if (res.status === 404) return null;
-        const data = await res.json();
-        return data.publicKey;
+        const SERVER_URL = await getUrl();
+        try {
+            const res = await fetch(`${SERVER_URL}/key/${handle}`);
+            if (res.status === 404) return null;
+            const data = await res.json();
+            return data.publicKey;
+        } catch (e) {
+            console.warn("Key fetch failed:", e);
+            return null;
+        }
     },
 
-    // NEW: Fetch Backup
     fetchEncryptedPrivateKey: async (handle) => {
-        const res = await fetch(`${SERVER_URL}/login/${handle}`);
-        if (!res.ok) return null;
-        return await res.json();
+        const SERVER_URL = await getUrl();
+        try {
+            const res = await fetch(`${SERVER_URL}/login/${handle}`);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (e) {
+            return null;
+        }
     },
 
     uploadFile: async (filePackage, senderHandle, recipientHandle) => {
-        // filePackage contains { iv, encryptedKey, fileData (base64string) }
-        // We add metadata
+        const SERVER_URL = await getUrl();
         const payload = {
             ...filePackage,
             sender: senderHandle,
@@ -51,11 +68,11 @@ export const mockServer = {
 
         if (!res.ok) throw new Error("Upload Failed");
         const data = await res.json();
-        console.log("Uploaded ID:", data.id);
         return data.id;
     },
 
     fetchFiles: async (recipientHandle) => {
+        const SERVER_URL = await getUrl();
         try {
             const res = await fetch(`${SERVER_URL}/inbox/${recipientHandle}`);
             if (!res.ok) return [];
@@ -67,6 +84,7 @@ export const mockServer = {
     },
 
     getFileContent: async (fileId) => {
+        const SERVER_URL = await getUrl();
         const res = await fetch(`${SERVER_URL}/file/${fileId}`);
         if (!res.ok) throw new Error("File Missing");
         return await res.json();

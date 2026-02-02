@@ -10,16 +10,18 @@ let selectedFile = null;
 const views = {
     loading: document.getElementById('view-loading'),
     register: document.getElementById('view-register'),
-    dashboard: document.getElementById('view-dashboard')
+    dashboard: document.getElementById('view-dashboard'),
+    config: document.getElementById('view-config') // Added Config View
 };
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
+    setupConfig(); // Init Config Logic
     await checkLogin();
     setupTabs();
     setupRegister();
     setupSend();
-    setupReceive();
+
 });
 
 async function checkLogin() {
@@ -36,8 +38,73 @@ async function checkLogin() {
 }
 
 function showView(name) {
-    Object.values(views).forEach(el => el.classList.add('hidden'));
-    views[name].classList.remove('hidden');
+    // Hide all main views but keep config separate
+    const mainViews = ['loading', 'register', 'dashboard'];
+    mainViews.forEach(v => views[v].classList.add('hidden'));
+
+    if (name === 'config') {
+        views.config.classList.remove('hidden');
+    } else {
+        views.config.classList.add('hidden');
+        views[name].classList.remove('hidden');
+    }
+}
+
+// --- Configuration Logic (V1.0 Feature) ---
+function setupConfig() {
+    const btnOpenReg = document.getElementById('btnOpenConfigReg');
+    const btnOpenDash = document.getElementById('btnOpenConfigDash');
+    const btnClose = document.getElementById('btnCloseConfig');
+    const btnSave = document.getElementById('btnSaveConfig');
+
+    const inputMode = document.getElementById('serverMode');
+    const inputUrl = document.getElementById('customUrl');
+    const customBox = document.getElementById('customUrlBox');
+
+    // Load Saved Settings
+    chrome.storage.local.get(['customServerUrl'], (result) => {
+        if (result.customServerUrl) {
+            inputMode.value = 'custom';
+            inputUrl.value = result.customServerUrl;
+            customBox.classList.remove('hidden');
+        } else {
+            inputMode.value = 'cloud';
+            customBox.classList.add('hidden');
+        }
+    });
+
+    // Toggle Visibility
+    const openConfig = () => views.config.classList.remove('hidden');
+    const closeConfig = () => views.config.classList.add('hidden');
+
+    btnOpenReg.onclick = openConfig;
+    btnOpenDash.onclick = openConfig;
+    btnClose.onclick = closeConfig;
+
+    // Mode Switch
+    inputMode.onchange = () => {
+        if (inputMode.value === 'custom') {
+            customBox.classList.remove('hidden');
+        } else {
+            customBox.classList.add('hidden');
+        }
+    };
+
+    // Save Action
+    btnSave.onclick = async () => {
+        if (inputMode.value === 'custom') {
+            let url = inputUrl.value.trim();
+            if (!url) return alert("Please enter a valid URL");
+            if (!url.startsWith('http')) return alert("URL must start with http:// or https://");
+
+            await chrome.storage.local.set({ customServerUrl: url });
+        } else {
+            await chrome.storage.local.remove('customServerUrl');
+        }
+
+        alert("Settings Saved!");
+        closeConfig();
+    };
 }
 
 // --- Dashboard Logic ---
@@ -152,7 +219,7 @@ function setupSend() {
             if (key) {
                 recipientKey = key;
                 document.getElementById('recipientBox').classList.remove('hidden');
-                document.getElementById('dropZone').classList.remove('hidden');
+                document.getElementById('dropZone').classList.remove('hidden'); // Fix: Unhide File Input
                 renderIdenticon(handle, document.getElementById('recipientIdenticon'));
             } else {
                 alert("User not found");
