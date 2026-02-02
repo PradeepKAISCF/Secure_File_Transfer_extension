@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.DS_Store
+
+# Javascript / Node
+node_modules/
+npm-debug.log*
+
+# Extension
+.agent/

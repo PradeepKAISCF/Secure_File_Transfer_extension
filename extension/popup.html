@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VajraShare</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Loading View -->
+        <div id="view-loading" class="view">Loading...</div>
+
+        <!-- Configuration View (Hidden by default) -->
+        <div id="view-config" class="view hidden">
+            <div class="card">
+                <header style="justify-content: space-between; display: flex; align-items: center;">
+                    <h2 class="neon-text">Settings</h2>
+                    <button id="btnCloseConfig" class="btn-sm">Close</button>
+                </header>
+                <p class="text-xs text-dim">Configure Extension Connectivity</p>
+
+                <div class="form-group">
+                    <label>Server Mode:</label>
+                    <select id="serverMode"
+                        style="width: 100%; padding: 8px; background: #222; color: white; border: 1px solid #444;">
+                        <option value="cloud">Public Cloud (PythonAnywhere)</option>
+                        <option value="custom">Intranet / Localhost</option>
+                    </select>
+                </div>
+
+                <div id="customUrlBox" class="form-group hidden">
+                    <label>Custom Server URL:</label>
+                    <input type="text" id="customUrl" placeholder="http://192.168.1.X:5000">
+                    <small class="text-dim">Ensure you have host permissions manifest.</small>
+                </div>
+
+                <div class="form-group" style="border-top: 1px solid #444; padding-top: 15px; margin-top: 15px;">
+                    <label>Self-Hosting:</label>
+                    <p class="text-xs text-dim" style="margin-bottom: 8px;">Run your own private server.</p>
+                    <a href="server_code.zip" download="vajrashare_server.zip" class="btn-sm"
+                        style="display:block; text-align:center; text-decoration:none; line-height:24px;">Download
+                        Server Code</a>
+                </div>
+
+                <button id="btnSaveConfig" class="full-width">Save & Reload</button>
+            </div>
+        </div>
+
+        <!-- Register View -->
+        <div id="view-register" class="view hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <h2 class="neon-text">VajraShare Init</h2>
+                    <button id="btnOpenConfigReg" class="btn-icon">⚙️</button>
+                </div>
+                <p class="text-xs text-dim">Secure Identity Generation</p>
+                <div class="form-group">
+                    <label>Choose Handle:</label>
+                    <input type="text" id="regHandle" placeholder="e.g. Neo">
+                </div>
+                <div class="form-group">
+                    <label>Set Password (Protects Key):</label>
+                    <input type="password" id="regPass" placeholder="Strong password">
+                </div>
+                <button id="btnRegister">Initialize Identity</button>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="view hidden">
+            <header>
+                <div>
+                    <h2 class="neon-text">VajraShare</h2>
+                    <div class="user-info">
+                        <div id="userIdenticon"></div>
+                        <small id="userHandleDisplay"></small>
+                    </div>
+                </div>
+                <div style="display:flex; gap:5px">
+                    <button id="btnOpenConfigDash" class="btn-icon">⚙️</button>
+                    <button id="btnLogout" class="btn-sm">Logout</button>
+                </div>
+            </header>
+
+            <div class="tabs">
+                <button id="tabSend" class="active">Send</button>
+                <button id="tabReceive">Receive</button>
+            </div>
+
+            <!-- Send Tab -->
+            <div id="content-send" class="tab-content">
+                <div class="card">
+                    <h3>Secure Send</h3>
+                    <div class="input-group">
+                        <input type="text" id="searchHandle" placeholder="Recipient Handle">
+                        <button id="btnSearch" class="btn-icon">🔍</button>
+                    </div>
+
+                    <div id="recipientBox" class="hidden recipient-box">
+                        <div id="recipientIdenticon"></div>
+                        <div>
+                            <strong>Verified Recipient</strong>
+                            <div class="text-xs text-dim">Key Found</div>
+                        </div>
+                    </div>
+
+                    <div id="dropZone" class="drop-zone hidden">
+                        <input type="file" id="fileInput" hidden>
+                        <div id="fileInfo">Click or Drop File Here</div>
+                    </div>
+
+                    <button id="btnSend" class="hidden full-width">Encrypt & Send</button>
+                </div>
+            </div>
+
+            <!-- Receive Tab -->
+            <div id="content-receive" class="tab-content hidden">
+                <h3>Incoming Files</h3>
+                <div id="fileList" class="file-list">
+                    <!-- Files injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="popup.js"></script>
+</body>
+
+</html>
