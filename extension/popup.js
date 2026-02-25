@@ -13,10 +13,13 @@ const views = {
     register: document.getElementById('view-register'),
     dashboard: document.getElementById('view-dashboard'),
     config: document.getElementById('view-config') // Added Config View
+    dashboard: document.getElementById('view-dashboard'),
+    config: document.getElementById('view-config') // Added Config View
 };
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
+    setupConfig(); // Init Config Logic
     setupConfig(); // Init Config Logic
     await checkLogin();
     setupTabs();
@@ -228,6 +231,7 @@ function setupSend() {
             if (key) {
                 recipientKey = key;
                 document.getElementById('recipientBox').classList.remove('hidden');
+                document.getElementById('dropZone').classList.remove('hidden'); // Fix: Unhide File Input
                 document.getElementById('dropZone').classList.remove('hidden'); // Fix: Unhide File Input
                 renderIdenticon(handle, document.getElementById('recipientIdenticon'));
             } else {
