@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VajraShare</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Loading View -->
+        <div id="view-loading" class="view">
+            <div class="neon-text" style="font-size: 24px; text-align: center; margin-top: 100px;">VAJRASHARE</div>
+            <div class="text-dim" style="text-align: center;">Loading secure environment...</div>
+        </div>
+
+        <!-- Configuration View -->
+        <div id="view-config" class="view hidden">
+            <header>
+                <h3 class="neon-text">Settings</h3>
+                <button id="btnCloseConfig" class="btn-sm">Back</button>
+            </header>
+
+            <div class="card">
+                <h4>Server Mode</h4>
+                <div class="form-group">
+                    <select id="serverMode" class="full-width"
+                        style="background:#222; color:white; border:1px solid #333; padding:8px;">
+                        <option value="cloud">Public Cloud</option>
+                        <option value="custom">Intranet (Custom)</option>
+                    </select>
+                </div>
+                <div id="customUrlBox" class="form-group hidden">
+                    <label>Server URL</label>
+                    <input type="text" id="customUrl" placeholder="http://192.168.1.5:5000">
+                </div>
+                <button id="btnSaveConfig" class="full-width">Save Settings</button>
+            </div>
+
+            <div class="card">
+                <h4>Self-Hosting</h4>
+                <p class="text-xs text-dim">Download the private server code.</p>
+                <a href="server_code.zip" download="vajrashare_server.zip">
+                    <button class="btn-sm full-width">Download Server Code</button>
+                </a>
+            </div>
+        </div>
+
+        <!-- Register View -->
+        <div id="view-register" class="view hidden">
+            <header>
+                <h2 class="neon-text">Initialize</h2>
+                <button id="btnOpenConfigReg" class="btn-icon">⚙️</button>
+            </header>
+            <div class="card">
+                <div class="form-group">
+                    <label>Handle (Username)</label>
+                    <input type="text" id="regHandle" placeholder="e.g. pradeep">
+                </div>
+                <div class="form-group">
+                    <label>Master Password</label>
+                    <input type="password" id="regPass" placeholder="••••••••">
+                </div>
+                <button id="btnRegister" class="full-width">Initialize Identity</button>
+                <p class="text-xs text-dim" style="margin-top:10px;">
+                    * Enter credentials to create or restore your account.
+                </p>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="view hidden">
+            <header>
+                <div class="user-info">
+                    <div id="userIdenticon"></div>
+                    <small id="userHandleDisplay" class="neon-text"></small>
+                </div>
+                <div style="display:flex; gap:5px">
+                    <button id="btnOpenConfigDash" class="btn-icon">⚙️</button>
+                    <button id="btnLogout" class="btn-sm">Logout</button>
+                </div>
+            </header>
+
+            <div class="tabs">
+                <button id="tabSend" class="active">Send</button>
+                <button id="tabReceive">Receive</button>
+            </div>
+
+            <div id="content-send" class="tab-content">
+                <div class="card">
+                    <h3>Secure Send</h3>
+                    <div class="input-group">
+                        <input type="text" id="searchHandle" placeholder="Recipient Handle">
+                        <button id="btnSearch" class="btn-icon">🔍</button>
+                    </div>
+                    <div id="recipientBox" class="hidden recipient-box">
+                        <div id="recipientIdenticon"></div>
+                        <div><strong>Verified Recipient</strong></div>
+                    </div>
+                    <div id="dropZone" class="drop-zone hidden">
+                        <input type="file" id="fileInput" hidden>
+                        <div id="fileInfo">Click or Drop File Here</div>
+                    </div>
+                    <button id="btnSend" class="hidden full-width">Encrypt & Send</button>
+                </div>
+            </div>
+
+            <div id="content-receive" class="tab-content hidden">
+                <h3>Incoming Files</h3>
+                <div id="fileList" class="file-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="popup.js"></script>
+</body>
+
+</html>
