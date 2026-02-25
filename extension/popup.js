@@ -1,5 +1,6 @@
 import { cryptoLib } from './utils/crypto_lib.js';
 import { mockServer } from './utils/api_client.js';
+import { storage } from './utils/storage_adapter.js';
 
 // --- State ---
 let user = null;
@@ -10,20 +11,28 @@ let selectedFile = null;
 const views = {
     loading: document.getElementById('view-loading'),
     register: document.getElementById('view-register'),
-    dashboard: document.getElementById('view-dashboard')
+    dashboard: document.getElementById('view-dashboard'),
+    config: document.getElementById('view-config') // Added Config View
 };
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
+    setupConfig(); // Init Config Logic
     await checkLogin();
     setupTabs();
     setupRegister();
     setupSend();
-    setupReceive();
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator && !window.chrome?.extension) {
+        navigator.serviceWorker.register('./service-worker.js').catch(err => {
+            console.warn('PWA Service Worker registration failed:', err);
+        });
+    }
 });
 
 async function checkLogin() {
-    const data = await chrome.storage.local.get(['currentUser']);
+    const data = await storage.get(['currentUser']);
     views.loading.classList.add('hidden');
 
     if (data.currentUser) {
@@ -36,8 +45,74 @@ async function checkLogin() {
 }
 
 function showView(name) {
-    Object.values(views).forEach(el => el.classList.add('hidden'));
-    views[name].classList.remove('hidden');
+    // Hide all main views but keep config separate
+    const mainViews = ['loading', 'register', 'dashboard'];
+    mainViews.forEach(v => views[v].classList.add('hidden'));
+
+    if (name === 'config') {
+        views.config.classList.remove('hidden');
+    } else {
+        views.config.classList.add('hidden');
+        views[name].classList.remove('hidden');
+    }
+}
+
+// --- Configuration Logic (V1.0 Feature) ---
+function setupConfig() {
+    const btnOpenReg = document.getElementById('btnOpenConfigReg');
+    const btnOpenDash = document.getElementById('btnOpenConfigDash');
+    const btnClose = document.getElementById('btnCloseConfig');
+    const btnSave = document.getElementById('btnSaveConfig');
+
+    const inputMode = document.getElementById('serverMode');
+    const inputUrl = document.getElementById('customUrl');
+    const customBox = document.getElementById('customUrlBox');
+
+    // Load Saved Settings
+    storage.get(['customServerUrl']).then((result) => {
+        if (result.customServerUrl) {
+            inputMode.value = 'custom';
+            inputUrl.value = result.customServerUrl;
+            customBox.classList.remove('hidden');
+        } else {
+            inputMode.value = 'cloud';
+            customBox.classList.add('hidden');
+        }
+    });
+
+    // Toggle Visibility
+    const openConfig = () => views.config.classList.remove('hidden');
+    const closeConfig = () => views.config.classList.add('hidden');
+
+    btnOpenReg.onclick = openConfig;
+    btnOpenDash.onclick = openConfig;
+    btnClose.onclick = closeConfig;
+
+    // Mode Switch
+    inputMode.onchange = () => {
+        if (inputMode.value === 'custom') {
+            customBox.classList.remove('hidden');
+        } else {
+            customBox.classList.add('hidden');
+        }
+    };
+
+    // Save Action
+    btnSave.onclick = async () => {
+        if (inputMode.value === 'custom') {
+            let url = inputUrl.value.trim();
+            if (!url) return alert("Please enter a valid URL");
+            if (!url.startsWith('http')) return alert("URL must start with http:// or https://");
+
+            await storage.set({ customServerUrl: url });
+        } else {
+            await storage.remove('customServerUrl');
+        }
+
+        alert("Settings Saved!");
+        closeConfig();
+    };
+
 }
 
 // --- Dashboard Logic ---
@@ -46,7 +121,7 @@ function initDashboard() {
     renderIdenticon(user.handle, document.getElementById('userIdenticon'));
 
     document.getElementById('btnLogout').onclick = async () => {
-        await chrome.storage.local.remove('currentUser');
+        await storage.remove('currentUser');
         location.reload();
     };
 }
@@ -75,6 +150,7 @@ function setupTabs() {
 
 // --- Registration / Restore Logic ---
 function setupRegister() {
+
     document.getElementById('btnRegister').onclick = async () => {
         const handle = document.getElementById('regHandle').value;
         const pass = document.getElementById('regPass').value;
@@ -86,8 +162,8 @@ function setupRegister() {
         btn.textContent = "Processing...";
 
         try {
-            // 1. Check if User Exists on Server (and has backup)
-            const backupKey = await mockServer.fetchEncryptedPrivateKey(handle);
+            // Check Server for existing identity
+            let backupKey = await mockServer.fetchEncryptedPrivateKey(handle);
 
             if (backupKey) {
                 // --- RESTORE IDENTITY FLOW ---
@@ -101,7 +177,7 @@ function setupRegister() {
 
                     // If we are here, Password is Correct!
                     const userData = { handle, privateKeyEncrypted: backupKey };
-                    await chrome.storage.local.set({ currentUser: userData });
+                    await storage.set({ currentUser: userData });
                     alert("Identity Restored Successfully!");
                     location.reload();
                     return;
@@ -126,7 +202,7 @@ function setupRegister() {
                 await mockServer.registerUser(handle, pubKey, privKeyWrap);
 
                 const userData = { handle, privateKeyEncrypted: privKeyWrap };
-                await chrome.storage.local.set({ currentUser: userData });
+                await storage.set({ currentUser: userData });
 
                 location.reload();
             }
@@ -152,7 +228,7 @@ function setupSend() {
             if (key) {
                 recipientKey = key;
                 document.getElementById('recipientBox').classList.remove('hidden');
-                document.getElementById('dropZone').classList.remove('hidden');
+                document.getElementById('dropZone').classList.remove('hidden'); // Fix: Unhide File Input
                 renderIdenticon(handle, document.getElementById('recipientIdenticon'));
             } else {
                 alert("User not found");

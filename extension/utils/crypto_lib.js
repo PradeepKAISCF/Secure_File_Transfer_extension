@@ -137,11 +137,8 @@ export const cryptoLib = {
 
         // 2. Encrypt File Data with Transaction Key
         const iv = window.crypto.getRandomValues(new Uint8Array(12));
-        const fileBuffer = await file.arrayBuffer(); // Read into memory (Careful with large files)
+        const fileBuffer = await file.arrayBuffer();
 
-        // Progress simulation (since SubtleCrypto is all-or-nothing for a single call)
-        // For real progress on large files, we'd need Chunking.
-        // Here we just notify start.
         if (onProgress) onProgress(10);
 
         const encryptedContent = await window.crypto.subtle.encrypt(
@@ -169,7 +166,7 @@ export const cryptoLib = {
             fileType: file.type,
             iv: cryptoLib.arrayBufferToBase64(iv),
             encryptedKey: cryptoLib.arrayBufferToBase64(encryptedUniqueKey),
-            fileData: cryptoLib.arrayBufferToBase64(encryptedContent) // This is huge. Blob usually better but handled in BG/Storage?
+            fileData: cryptoLib.arrayBufferToBase64(encryptedContent)
         };
     },
 

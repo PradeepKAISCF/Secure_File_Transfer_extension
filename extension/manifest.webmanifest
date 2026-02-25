@@ -1,0 +1,9 @@
+{
+    "name": "VajraShare",
+    "short_name": "VajraShare",
+    "description": "Secure Intranet File Transfer with Hybrid Encryption",
+    "start_url": "popup.html",
+    "display": "standalone",
+    "background_color": "#0a0a0a",
+    "theme_color": "#00ff41"
+}
