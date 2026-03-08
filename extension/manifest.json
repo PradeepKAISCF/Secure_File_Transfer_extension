@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "VajraShare - Secure File Transfer",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Secure Intranet File Transfer with Hybrid Encryption",
     "permissions": [
         "storage"

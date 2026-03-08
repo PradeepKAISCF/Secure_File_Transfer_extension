@@ -1,4 +1,6 @@
-# Python
+# VajraShare Standard Gitignore
+
+# Python & System
 __pycache__/
 *.py[cod]
 *$py.class
@@ -6,9 +8,24 @@ venv/
 .env
 .DS_Store
 
+# PyInstaller Build Artifacts
+build/
+dist/
+*.spec
+
+# Application Data & Server State (Never commit this!)
+server/data/
+
 # Javascript / Node
 node_modules/
 npm-debug.log*
 
-# Extension
+# Extension Zip Builds & Download bundles (Do not commit large binaries)
+*.zip
+*.exe
+VajraShare_Server.exe
+VajraShare_Intranet.zip
+
+# AI Agents Data
 .agent/
+.agents/
